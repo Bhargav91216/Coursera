@@ -1,57 +1,73 @@
 import javax.swing.*;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
 
-public class ExcelReaderApp extends JFrame {
-    private Workbook workbook;
-    private Sheet sheet;
-    private int currentRow = 0;
-
-    public ExcelReaderApp() {
-        // Initialize your JFrame and components here.
-
-        JButton nextButton = new JButton("Next");
-        JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"None", "Pass", "Fail", "Pending"});
-        statusComboBox.setSelectedItem("None");
-
-        nextButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String status = (String) statusComboBox.getSelectedItem();
-                if (status.equals("None")) {
-                    JOptionPane.showMessageDialog(null, "Please select an option.");
-                } else {
-                    setCellData(currentRow, 3, status); // Assuming 0-based index for columns
-                    currentRow++;
-                    if (currentRow < sheet.getPhysicalNumberOfRows()) {
-                        // Show the next row's data
-                        // You can update your UI to display the data from the Excel sheet here.
-                    } else {
-                        JOptionPane.showMessageDialog(null, "End of data.");
-                    }
-                }
-            }
-        });
-    }
-
-    private void setCellData(int row, int col, String value) {
-        Row excelRow = sheet.getRow(row);
-        if (excelRow == null) {
-            excelRow = sheet.createRow(row);
-        }
-        Cell cell = excelRow.createCell(col);
-        cell.setCellValue(value);
-    }
+public class ExcelReaderApp {
+    private static int currentRow = 0;
+    private static String[] options = {"None", "Pass", "Failed", "Pending"};
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ExcelReaderApp app = new ExcelReaderApp();
-            app.setVisible(true);
-        });
+        try {
+            // Load Excel file
+            FileInputStream fis = new FileInputStream("your_excel_file.xlsx");
+            Workbook workbook = WorkbookFactory.create(fis);
+            Sheet sheet = workbook.getSheetAt(0);
+            
+            // Create a JFrame
+            JFrame frame = new JFrame("Excel Reader Application");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            
+            // Create JLabel for displaying data
+            JLabel dataLabel = new JLabel(getDataForRow(sheet, currentRow));
+            
+            // Create JComboBox for options
+            JComboBox<String> optionComboBox = new JComboBox<>(options);
+            
+            // Create JButton for moving to the next row
+            JButton nextButton = new JButton("Next");
+
+            // Add action listener to the Next button
+            nextButton.addActionListener(e -> {
+                String selectedOption = (String) optionComboBox.getSelectedItem();
+                if (selectedOption.equals("None")) {
+                    JOptionPane.showMessageDialog(frame, "Please select an option.");
+                } else {
+                    updateExcelWithOption(sheet, currentRow, selectedOption);
+                    currentRow++;
+                    if (currentRow < sheet.getPhysicalNumberOfRows()) {
+                        dataLabel.setText(getDataForRow(sheet, currentRow));
+                        optionComboBox.setSelectedItem("None");
+                    } else {
+                        JOptionPane.showMessageDialog(frame, "All rows processed.");
+                    }
+                }
+            });
+            
+            // Create JPanel for components
+            JPanel panel = new JPanel();
+            panel.add(dataLabel);
+            panel.add(optionComboBox);
+            panel.add(nextButton);
+            
+            frame.add(panel);
+            frame.pack();
+            frame.setVisible(true);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String getDataForRow(Sheet sheet, int row) {
+        Row dataRow = sheet.getRow(row);
+        Cell cell1 = dataRow.getCell(0);
+        Cell cell2 = dataRow.getCell(1);
+        Cell cell3 = dataRow.getCell(2);
+        return cell1.toString() + " " + cell2.toString() + " " + cell3.toString();
+    }
+
+    private static void updateExcelWithOption(Sheet sheet, int row, String option) {
+        Row dataRow = sheet.getRow(row);
+        Cell cell4 = dataRow.createCell(3);
+        cell4.setCellValue(option);
     }
 }

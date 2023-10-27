@@ -1,65 +1,57 @@
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import javax.swing.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.FileInputStream;
-import java.util.Iterator;
 
-public class ExcelDataViewer extends Application {
-    private Iterator<Row> rowIterator;
-    private Stage stage;
+public class ExcelReaderApp extends JFrame {
+    private Workbook workbook;
+    private Sheet sheet;
+    private int currentRow = 0;
+
+    public ExcelReaderApp() {
+        // Initialize your JFrame and components here.
+
+        JButton nextButton = new JButton("Next");
+        JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"None", "Pass", "Fail", "Pending"});
+        statusComboBox.setSelectedItem("None");
+
+        nextButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String status = (String) statusComboBox.getSelectedItem();
+                if (status.equals("None")) {
+                    JOptionPane.showMessageDialog(null, "Please select an option.");
+                } else {
+                    setCellData(currentRow, 3, status); // Assuming 0-based index for columns
+                    currentRow++;
+                    if (currentRow < sheet.getPhysicalNumberOfRows()) {
+                        // Show the next row's data
+                        // You can update your UI to display the data from the Excel sheet here.
+                    } else {
+                        JOptionPane.showMessageDialog(null, "End of data.");
+                    }
+                }
+            }
+        });
+    }
+
+    private void setCellData(int row, int col, String value) {
+        Row excelRow = sheet.getRow(row);
+        if (excelRow == null) {
+            excelRow = sheet.createRow(row);
+        }
+        Cell cell = excelRow.createCell(col);
+        cell.setCellValue(value);
+    }
 
     public static void main(String[] args) {
-        launch(args);
-    }
-
-    @Override
-    public void start(Stage primaryStage) {
-        stage = primaryStage;
-        primaryStage.setTitle("Excel Data Viewer");
-
-        Button nextButton = new Button("Next");
-        nextButton.setOnAction(e -> displayNextRow());
-
-        VBox vbox = new VBox(10);
-        vbox.getChildren().addAll(nextButton);
-
-        Scene scene = new Scene(vbox, 300, 200);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        loadExcelData();
-    }
-
-    private void loadExcelData() {
-        try {
-            FileInputStream excelFile = new FileInputStream("your_excel_file.xlsx");
-            Workbook workbook = new XSSFWorkbook(excelFile);
-            Sheet sheet = workbook.getSheetAt(0); // Assuming you want the first sheet.
-
-            rowIterator = sheet.iterator();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void displayNextRow() {
-        if (rowIterator.hasNext()) {
-            Row row = rowIterator.next();
-            // You can access cell values in the row using row.getCell(cellIndex).
-
-            // For example, to display the values in a dialog or a label:
-            // String cellValue = row.getCell(0).getStringCellValue();
-            // Display cellValue in your GUI.
-
-            // Once you reach the end, you can handle it accordingly.
-        } else {
-            // Handle the end of the data.
-            stage.close(); // Close the application or display a message.
-        }
+        SwingUtilities.invokeLater(() -> {
+            ExcelReaderApp app = new ExcelReaderApp();
+            app.setVisible(true);
+        });
     }
 }
